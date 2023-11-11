@@ -8,6 +8,7 @@ using System.Drawing;
 using System.IO;
 using System.Diagnostics;
 using MathNet.Numerics.Distributions;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Graph_Test
 {
@@ -25,30 +26,32 @@ namespace Graph_Test
             
             Random random = new Random();
             Stopwatch stopwatch = new Stopwatch();
+            Stopwatch generationCounter = new Stopwatch();
 
             int runCount = 1; // How many times to run the simulation?
 
             double mutationStdDev = 0.001;
             double mutationRateStdDev = 0.001; // 0.000000001
+            double mutationRateRollMultiplier = 10000;
 
             double germlineMutationMean = -mutationStdDev / 1;
             double somaticMutationMean = -mutationStdDev / 1;
 
             int individualLength = 100; // average for humans is 3200000000
-            int populationSize = 1000; // Or 100?
+            int populationSize = 10000; // Or 100?
 
-            double startingGermlineMutationRate = 0.001;  // average for humans is 0.000000012
-            double startingSomaticMutationRate  = 0.001;  // average for humans is 0.00000028
+            double startingGermlineMutationRate = 0.000000012;  // average for humans is 0.000000012
+            double startingSomaticMutationRate  = 0.00000028;  // average for humans is 0.00000028
             // Standard is 0.0001
 
             //double startingGermlineMutationRate = (0.000000012 * 3200000000) / individualLength;
             //double startingSomaticMutationRate = (0.00000028 * 3200000000) / individualLength;
 
-            int generationMax = 10000;
+            int generationMax = 100000;
             //int generationMax = 25000000;
 
-            double chartMaxY = 0.05; //0.0000005
-            double yIncIntervals = 0.05;
+            double chartMaxY = 0.0000005; //0.0000005
+            double yIncIntervals = 0.00000025;
 
             bool applyDriftBarrier = true;
 
@@ -64,7 +67,9 @@ namespace Graph_Test
             //double meanPositiveSomaticMutation = somaticMutationMean + mutationStdDev * (Normal.PDF(somaticMutationMean, mutationStdDev, ZOfPositiveSomaticMutation) / probabilityOfPositiveSomaticMutation);
 
             double idealFitness = (meanPositiveGermlineMutation * probabilityOfPositiveGermlineMutation / individualLength) * generationMax * Math.Log10(populationSize);
-
+            
+            Debug.WriteLine("Starting Germline: " + startingGermlineMutationRate);
+            Debug.WriteLine("Starting Somatic: " + startingSomaticMutationRate);
             Debug.WriteLine("germlineMutationMean: " + germlineMutationMean);
             Debug.WriteLine("ZOfPositiveGermlineMutation: " + ZOfPositiveGermlineMutation);
             Debug.WriteLine("probabilityOfPositiveGermlineMutation: " + probabilityOfPositiveGermlineMutation);
@@ -98,6 +103,7 @@ namespace Graph_Test
                 }
 
                 stopwatch.Start();
+                generationCounter.Start();
 
                 while (generationCount < generationMax + 1)
                 // Set tracepoint here to track the generations while running.
@@ -106,6 +112,11 @@ namespace Graph_Test
                 {
 
                     if (generationCount % 1000 == 0) { Debug.WriteLine("Generation: " + generationCount); }
+
+                    if (generationCounter.ElapsedMilliseconds > 60000) { 
+                        generationCounter.Restart();
+                        Debug.WriteLine("Generation: " + generationCount);
+                    }
 
                     generationCount++;
 
@@ -119,7 +130,8 @@ namespace Graph_Test
                     loserDataPoints[generationCount - 1] = lowestFitness;
 
                     lowestFitness = double.PositiveInfinity;
-                    highestFitness = double.NegativeInfinity;
+                    //highestFitness = double.NegativeInfinity;
+
 
                     double germlineMutationRate = fittestIndividual[0];
                     double[] tempFittestIndividual = new double[individualLength + 2];
@@ -132,9 +144,10 @@ namespace Graph_Test
 
                         for (int j = 0; j < currentIndividual.Length; j++)
                         {
-                            if (random.NextDouble() <= germlineMutationRate)
+                            
+                            if (j == 0 || j == 1)
                             {
-                                if (j == 0 || j == 1)
+                                if (random.NextDouble() <= germlineMutationRate * mutationRateRollMultiplier)
                                 {
 
                                     double newMutationRate = normalDistribution(currentIndividual[j], mutationRateStdDev);
@@ -142,9 +155,12 @@ namespace Graph_Test
 
                                     currentIndividual[j] = newMutationRate;
 
-
                                 }
-                                else
+
+                            }
+                            else
+                            {
+                                if (random.NextDouble() <= germlineMutationRate)
                                 {
                                     double fitnessIncrease = normalDistribution(germlineMutationMean, mutationStdDev);
                                     if (applyDriftBarrier) fitnessIncrease = applyDriftBarrierToFitness(fitnessIncrease, currentIndividual[j]);
@@ -165,17 +181,21 @@ namespace Graph_Test
 
                         for (int u = 0; u < currentSomaticIndividual.Length; u++)
                         {
-                            if (random.NextDouble() <= somaticMutationRate)
+                            
+                            if (u == 0 || u == 1)
                             {
-                                if (u == 0 || u == 1)
+                                if (random.NextDouble() <= somaticMutationRate * mutationRateRollMultiplier)
                                 {
 
                                     double newMutationRate = normalDistribution(currentIndividual[u], mutationRateStdDev);
                                     newMutationRate = Math.Max(Math.Min(newMutationRate, 1), 0.0001);
                                     currentSomaticIndividual[u] = newMutationRate;
-
                                 }
-                                else
+
+                            }
+                            else
+                            {
+                                if (random.NextDouble() <= somaticMutationRate)
                                 {
                                     double fitnessIncrease = normalDistribution(somaticMutationMean, mutationStdDev);
                                     if (applyDriftBarrier) fitnessIncrease = applyDriftBarrierToFitness(fitnessIncrease, currentIndividual[u]);
@@ -183,6 +203,7 @@ namespace Graph_Test
                                     currentIndividual[u] += fitnessIncrease;
                                 }
                             }
+
                             if (u != 0 && u != 1)
                             {
                                 currentFitness += currentSomaticIndividual[u];
@@ -218,6 +239,7 @@ namespace Graph_Test
             }
 
             stopwatch.Stop();
+            generationCounter.Stop();
             Debug.WriteLine($"Execution Time:  {stopwatch.ElapsedMilliseconds} ms, {(int)(stopwatch.ElapsedMilliseconds / 1000)} s.");
 
 
