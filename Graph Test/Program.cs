@@ -32,16 +32,16 @@ namespace Graph_Test
 
             double mutationStdDev = 0.001;
             double mutationRateStdDev = 0.001; // 0.000000001
-            double mutationRateRollMultiplier = 10000;
+            double mutationRateRollMultiplier = 1;
 
             double germlineMutationMean = -mutationStdDev / 1;
             double somaticMutationMean = -mutationStdDev / 1;
 
-            int individualLength = 100; // average for humans is 3200000000
-            int populationSize = 10000; // Or 100?
+            int individualLength = 10000; // average for humans is 3200000000
+            int populationSize = 100; // Or 100?
 
-            double startingGermlineMutationRate = 0.000000012;  // average for humans is 0.000000012
-            double startingSomaticMutationRate  = 0.00000028;  // average for humans is 0.00000028
+            double startingGermlineMutationRate = 0.00001;  // average for humans is 0.000000012
+            double startingSomaticMutationRate  = 0.0002;  // average for humans is 0.00000028
             // Standard is 0.0001
 
             //double startingGermlineMutationRate = (0.000000012 * 3200000000) / individualLength;
