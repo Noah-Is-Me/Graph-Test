@@ -37,7 +37,7 @@ namespace Graph_Test
             double germlineMutationMean = -mutationStdDev / 1;
             double somaticMutationMean = -mutationStdDev / 1;
 
-            int individualLength = 10000; // average for humans is 3200000000
+            int individualLength = 25000; // average for humans is 3200000000
             int populationSize = 100; // Or 100?
 
             double startingGermlineMutationRate = 0.00001;  // average for humans is 0.000000012
@@ -53,7 +53,7 @@ namespace Graph_Test
             double chartMaxY = 0.0000005; //0.0000005
             double yIncIntervals = 0.00000025;
 
-            bool applyDriftBarrier = true;
+            bool applyDriftBarrier = false;
 
             double ZOfPositiveGermlineMutation = (0 - germlineMutationMean) / mutationStdDev;
             //double ZOfPositiveSomaticMutation = (0 - somaticMutationMean) / mutationStdDev;
